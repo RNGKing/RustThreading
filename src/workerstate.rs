@@ -25,7 +25,7 @@ impl WorkerState{
             None => {
                 println!("At start of work function");
                 let (tx, rx): (Sender<i32>, Receiver<i32>) = mpsc::channel();
-                self._sender = Option::Some(tx);
+                self._sender = Some(tx.clone());
                 self._worker_handle = Option::Some(thread::spawn( move || {
                     loop{
                         println!("Waiting for input");
@@ -33,6 +33,7 @@ impl WorkerState{
                             Ok(val) => 
                             {
                                 if val == 1 {
+                                    println!("Thread ending");
                                     return;
                                 }        
                                 println!("Do something");
@@ -49,7 +50,13 @@ impl WorkerState{
     }
 
     pub fn EndWork(&mut self) -> Result<(), String>{
-        match self._sender.as_mut(){
+        match self._sender.as_ref(){
+            Some(value) => println!("there is a value here"),
+            None => println!("there is nothing here"),
+        }
+
+
+        match self._sender.as_ref(){
             Some(value) => {
                 println!("Attempting to end work thread");
                 value.send(1).unwrap();
