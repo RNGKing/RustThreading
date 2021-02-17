@@ -3,7 +3,7 @@ use std::sync::mpsc;
 use std::thread;
 use std::thread::JoinHandle;
 use std::time::Duration;
-use std::marker::Copy;
+
 
 pub struct WorkerState{
 
@@ -16,17 +16,17 @@ impl WorkerState{
     pub fn new() -> WorkerState{
         WorkerState{
             _worker_handle : Option::None,
-            _sender : Option::None,
+            _sender : None,
         }
     }
 
-    pub fn StartWork(&mut self) -> Result<(), String> {
+    pub fn start_work(&mut self) -> Result<(), String> {
         match self._worker_handle {
             None => {
                 println!("At start of work function");
                 let (tx, rx): (Sender<i32>, Receiver<i32>) = mpsc::channel();
                 self._sender = Some(tx.clone());
-                self._worker_handle = Option::Some(thread::spawn( move || {
+                self._worker_handle = Some(thread::spawn( move || {
                     loop{
                         println!("Waiting for input");
                         match rx.try_recv(){
@@ -49,21 +49,18 @@ impl WorkerState{
         }
     }
 
-    pub fn EndWork(&mut self) -> Result<(), String>{
-        match self._sender.as_ref(){
-            Some(value) => println!("there is a value here"),
-            None => println!("there is nothing here"),
-        }
+    pub fn end_work(&mut self) -> Result<(), String>{
 
-
-        match self._sender.as_ref(){
-            Some(value) => {
-                println!("Attempting to end work thread");
-                value.send(1).unwrap();
+        match self._sender.as_mut() {
+            Some(sender) => {
+                println!("Signaling the end of the thread");
+                sender.send(1).unwrap();
                 self._worker_handle.take().map(JoinHandle::join);
+                self._sender = None;
+                self._worker_handle = None;
                 Ok(())
             },
-            None => Err("Failed to join thread".to_string())
+            None => Err("Could not end the thread".to_string())
         }
     }
 }

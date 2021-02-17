@@ -21,7 +21,7 @@ async fn hello() -> impl Responder {
 
 #[get("/start")]
 async fn start_work(data: web::Data<AppState>) -> impl Responder {
-    match data.work_state.lock().unwrap().StartWork(){
+    match data.work_state.lock().unwrap().start_work(){
         Ok(()) => HttpResponse::Ok().body("Success starting work thread"),
         Err(err) => HttpResponse::Ok().body(err),
     }
@@ -29,7 +29,7 @@ async fn start_work(data: web::Data<AppState>) -> impl Responder {
 
 #[get("/end")]
 async fn end_work(data: web::Data<AppState>) -> impl Responder {
-    match  data.work_state.lock().unwrap().EndWork(){
+    match  data.work_state.lock().unwrap().end_work(){
         Ok(()) => HttpResponse::Ok().body("Successfully ended the thread"),
         Err(err) => HttpResponse::Ok().body(err),
     }
@@ -44,9 +44,10 @@ async fn increment_struct(data: web::Data<TestingStruct>) -> impl Responder{
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| {
+    let worker_state = web::Data::new(AppState{work_state : Mutex::new(WorkerState::new())});
+    HttpServer::new(move || {
         App::new()
-            .data(AppState {work_state: Mutex::new(WorkerState::new())})
+            .app_data(worker_state.clone())
             .data(TestingStruct{ test_state : Mutex::new(TestStruct{ count : 0})})
             .service(hello)
             .service(start_work)
